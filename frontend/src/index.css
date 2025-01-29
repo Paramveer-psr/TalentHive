@@ -122,7 +122,7 @@ body {
 }
 
 .auth-page {
-  display: flex; /* Flexbox for layout */
+  display: flex; 
   align-items: center; /* Center items vertically */
   justify-content: center; /* Center items horizontally */
   min-height: 100vh; /* Full height */

@@ -19,17 +19,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-primary/10">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-primary/10 relative">
+      {/* Background image */}
+      <div className="absolute inset-0">
+        <img src="src/assets/jobs.jpg" alt="Job Background" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black opacity-30" /> {/* Gradient overlay */}
+      </div>
       <motion.div
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
-        className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md"
+        className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md relative z-10"
       >
         <div className="text-center mb-10">
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Welcome Back
-          </h2>
-          <p className="text-gray-500 mt-2">Sign in to continue your journey</p>
+          <h2 className="text-4xl font-bold text-primary">Welcome Back!</h2>
+          <p className="text-[#19b1d3] mt-2">Continue your adventure—just sign in!</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -40,7 +43,6 @@ const Login = () => {
                 type="email"
                 placeholder="Email"
                 className="w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                // ... rest
               />
             </div>
             <div className="relative">
@@ -49,7 +51,6 @@ const Login = () => {
                 type="password"
                 placeholder="Password"
                 className="w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                // ... rest
               />
             </div>
           </div>
@@ -63,7 +64,7 @@ const Login = () => {
         </form>
 
         <div className="mt-8 text-center">
-          <span className="text-gray-500">New here? </span>
+          <span className="text-[#19b1d3]">New here? </span>
           <Link
             to="/register"
             className="text-secondary font-semibold hover:underline"
