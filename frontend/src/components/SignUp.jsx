@@ -1,55 +1,80 @@
 import React from "react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { FaUser, FaEnvelope, FaLock, FaUserTie } from 'react-icons/fa';
 
 const SignUp = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("jobseeker");
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "jobseeker" });
 
-  const handleSignup = () => {
-    console.log("Signup with", name, email, password, role);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Signup with", formData);
+    // Add your signup logic here
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded-lg"
-        />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded-lg"
-        >
-          <option value="jobseeker">Job Seeker</option>
-          <option value="employer">Employer</option>
-        </select>
-        <button
-          onClick={handleSignup}
-          className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg"
-        >
-          Sign Up
-        </button>
+    <div className="auth-page">
+      <div className="auth-container">
+        <h1 className="auth-title">Create Account</h1>
+        <p className="auth-description">Sign up to start your journey!</p>
+        <form onSubmit={handleSubmit}>
+          <div className="input-container">
+            <FaUser className="input-icon" />
+            <input
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={formData.name}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-container">
+            <FaEnvelope className="input-icon" />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-container">
+            <FaLock className="input-icon" />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-container">
+            <FaUserTie className="input-icon" />
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="auth-input"
+            >
+              <option value="jobseeker">Job Seeker</option>
+              <option value="employer">Employer</option>
+            </select>
+          </div>
+          <button type="submit" className="auth-button">Sign Up</button>
+        </form>
+        <p className="mt-4 text-center">
+          Already have an account? <Link to="/login" className="text-blue-500">Log in</Link>
+        </p>
       </div>
     </div>
   );
