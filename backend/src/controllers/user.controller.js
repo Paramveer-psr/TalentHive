@@ -4,7 +4,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { sendEmail } from "../utils/email.js";
 import crypto from "crypto";
-import mongoose from "mongoose";
+import axios from "axios";
+import fs from "fs";
+import { uploadFile } from "../utils/supabase.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -337,6 +339,39 @@ const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Password reset successfully"));
 });
 
+const setProfile = asyncHandler(async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const fileUrl = await uploadFile(req.file);
+    // console.log(fileUrl);
+    const { data, error } = await axios.post(
+      `${process.env.AISERVICE_URL}/api/v1/parse`,
+      { fileUrl },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    // console.log(data);
+    if (error) {
+      throw new Error(error);
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { resume: fileUrl, skills: data.skills, experience: data.experience },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, "Profile Saved Successfully", user)); // ✅ Returns the file URL
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed", error: error.message });
+  }
+});
+
 export {
   signUp,
   signIn,
@@ -344,4 +379,5 @@ export {
   verifyEmail,
   sendPasswordResetEmail,
   resetPassword,
+  setProfile,
 };

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routes import api_router
 from app.utils.redis_cache import RedisClient
+import os
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -52,12 +53,12 @@ async def health_check():
         "version": app.version
     }
 
-# For local development
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
         host=settings.HOST,
-        port=settings.PORT,
+        port=int(5000),
         reload=settings.DEBUG
     )

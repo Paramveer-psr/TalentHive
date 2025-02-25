@@ -32,6 +32,16 @@ const userSchema = new Schema(
     passwordResetToken: String,
     emailVerificationToken: String,
     passwordResetExpires: Date,
+
+    skills: [String],
+    experience: Number,
+    resume: String,
+    applications: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Job",
+      },
+    ],
   },
   { timestamps: true }
 );
