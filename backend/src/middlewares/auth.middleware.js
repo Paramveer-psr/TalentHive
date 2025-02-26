@@ -32,7 +32,7 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
 
 export const roleCheck = (roles) =>
   asyncHandler(async (req, _, next) => {
-    if (roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role)) {
       throw new ApiError(
         403,
         "Access denied. You do not have the required role"

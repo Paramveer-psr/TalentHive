@@ -26,8 +26,10 @@ app.get("/", (req, res) => {
 });
 
 import userRouter from "./routes/user.routes.js";
+import jobRouter from "./routes/job.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 app.use("/api/auth/users", userRouter);
+app.use("/api/jobs", jobRouter);
 app.use(errorHandler);
 
 export { app };

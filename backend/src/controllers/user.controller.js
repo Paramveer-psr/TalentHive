@@ -142,12 +142,12 @@ const signUp = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        "User Registered Successfully. Please verify your email.",
         {
           user: createdUser,
           accessToken,
           refreshToken,
-        }
+        },
+        "User Registered Successfully. Please verify your email."
       )
     );
 });
@@ -190,11 +190,15 @@ const signIn = asyncHandler(async (req, res) => {
     .cookie("accessToken", accessToken, { sameSite: "Strict" })
     .cookie("refreshToken", refreshToken, options)
     .json(
-      new ApiResponse(200, "Sign-In Successfully", {
-        user: loggedInUser,
-        accessToken,
-        refreshToken,
-      })
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "Sign-In Successfully"
+      )
     );
 });
 
@@ -366,7 +370,7 @@ const setProfile = asyncHandler(async (req, res) => {
 
     res
       .status(200)
-      .json(new ApiResponse(200, "Profile Saved Successfully", user)); // ✅ Returns the file URL
+      .json(new ApiResponse(200, user, "Profile Saved Successfully")); // ✅ Returns the file URL
   } catch (error) {
     res.status(500).json({ message: "Upload failed", error: error.message });
   }
