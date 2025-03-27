@@ -32,7 +32,10 @@ const userSchema = new Schema(
     passwordResetToken: String,
     emailVerificationToken: String,
     passwordResetExpires: Date,
+    phone: Number,
+    location: String,
 
+    // For jobseekers
     skills: [String],
     experience: Number,
     resume: String,
@@ -42,6 +45,11 @@ const userSchema = new Schema(
         ref: "Job",
       },
     ],
+    // For employers
+    companyName: String,
+    companySize: String,
+    industry: String,
+    description: String,
   },
   { timestamps: true }
 );

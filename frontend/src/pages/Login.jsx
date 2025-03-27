@@ -1,29 +1,49 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 // import { loginUser } from "../features/auth/authSlice";
 import { useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import axios from "axios";
+import { loginRoute } from "../utils/ApiRoutes";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   // const dispatch = useDispatch();
   // const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(loginUser(formData))
-      .unwrap()
-      .then(() => navigate("/dashboard"))
-      .catch((err) => alert(err));
+
+    const { data } = await axios.post(loginRoute, formData);
+    // console.log("Login response", response.data);
+    localStorage.setItem("token", data.data.accessToken);
+    localStorage.setItem("user", JSON.stringify(data.data.user));
+
+    if (data.data.user.role === "jobseeker") {
+      navigate("/job-seeker-dashboard");
+    }
+    if (data.data.user.role === "employer") {
+      navigate("/employer-dashboard");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-primary/10 relative">
       {/* Background image */}
       <div className="absolute inset-0">
-        <img src="src/assets/jobs.jpg" alt="Job Background" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black opacity-30" /> {/* Gradient overlay */}
+        <img
+          src="src/assets/jobs.jpg"
+          alt="Job Background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black opacity-30" />{" "}
+        {/* Gradient overlay */}
       </div>
       <motion.div
         initial={{ scale: 0.95 }}
@@ -32,7 +52,9 @@ const Login = () => {
       >
         <div className="text-center mb-10">
           <h2 className="text-4xl font-bold text-primary">Welcome Back!</h2>
-          <p className="text-[#19b1d3] mt-2">Continue your adventure—just sign in!</p>
+          <p className="text-[#19b1d3] mt-2">
+            Continue your adventure—just sign in!
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -43,6 +65,8 @@ const Login = () => {
                 type="email"
                 placeholder="Email"
                 className="w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                onChange={handleChange}
+                name="email"
               />
             </div>
             <div className="relative">
@@ -51,13 +75,15 @@ const Login = () => {
                 type="password"
                 placeholder="Password"
                 className="w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                onChange={handleChange}
+                name="password"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-primary text-black py-3 rounded-xl font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
           >
             Sign In
           </button>

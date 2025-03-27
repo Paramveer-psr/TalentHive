@@ -115,7 +115,7 @@ const signUp = asyncHandler(async (req, res) => {
 			<p>Thank you for your attention.</p>
 		  </div>
 		  <div class="footer">
-			<p>&copy; 2024 BuddyBoard. All rights reserved.</p>
+			<p>&copy; 2025 TalentHive. All rights reserved.</p>
 		  </div>
 		</div>
 	  </body>
@@ -304,7 +304,7 @@ const sendPasswordResetEmail = asyncHandler(async (req, res) => {
 			<p>Thank you for your attention.</p>
 		  </div>
 		  <div class="footer">
-			<p>&copy; 2024 BuddyBoard. All rights reserved.</p>
+			<p>&copy; 2025 TalentHive. All rights reserved.</p>
 		  </div>
 		</div>
 	  </body>
@@ -344,36 +344,199 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const setProfile = asyncHandler(async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    const fileUrl = await uploadFile(req.file);
-    // console.log(fileUrl);
-    const { data, error } = await axios.post(
-      `${process.env.AISERVICE_URL}/api/v1/parse`,
-      { fileUrl },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    // console.log(data);
-    if (error) {
-      throw new Error(error);
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { resume: fileUrl, skills: data.skills, experience: data.experience },
-      { new: true }
-    );
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, user, "Profile Saved Successfully")); // ✅ Returns the file URL
-  } catch (error) {
-    res.status(500).json({ message: "Upload failed", error: error.message });
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(400, "User not found");
   }
+
+  if (user.role === "jobseeker") {
+    try {
+      const { phone, location } = req.body;
+      if ([phone, location].some((field) => field?.trim() === "")) {
+        throw new ApiError(400, "All fields are required !!");
+      }
+
+      // console.log(req.body);
+      // console.log(req.file);
+      // console.log(req.files);
+
+      if (!req.file)
+        return res.status(400).json({ message: "No file uploaded" });
+      const fileUrl = await uploadFile(req.file);
+      // console.log(fileUrl);
+      const { data, error } = await axios.post(
+        `${process.env.AISERVICE_URL}/api/v1/parse`,
+        { fileUrl },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // console.log(data);
+      if (error) {
+        throw new Error(error);
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          resume: fileUrl,
+          skills: data.skills,
+          experience: data.experience,
+          phone,
+          location,
+        },
+        { new: true }
+      );
+
+      res
+        .status(200)
+        .json(new ApiResponse(200, user, "Profile Saved Successfully")); // ✅ Returns the file URL
+    } catch (error) {
+      res.status(500).json({ message: "Upload failed", error: error.message });
+    }
+  } else if (user.role === "employer") {
+    try {
+      const {
+        companyName,
+        companySize,
+        industry,
+        description,
+        phone,
+        location,
+      } = req.body;
+      console.log(req.body);
+      if (
+        [companyName, phone, location, companySize, industry, description].some(
+          (field) => field?.trim() === ""
+        )
+      ) {
+        throw new ApiError(400, "All fields are required !!");
+      }
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          companyName,
+          companySize,
+          industry,
+          description,
+          location,
+          phone,
+        },
+        { new: true }
+      );
+      console.log(updatedUser);
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, updatedUser, "Profile Updated Successfully")
+        );
+    } catch (error) {
+      throw new ApiError(
+        500,
+        "Something went wrong while updating profile",
+        error
+      );
+    }
+  }
+});
+
+const isEmailVerified = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(400, "User not found");
+  }
+  return res.status(200).json(
+    new ApiResponse(200, {
+      isEmailVerified: user.isEmailVerified,
+    })
+  );
+});
+
+const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(400, "User not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw new ApiError(400, "Email already verified");
+  }
+
+  const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+  user.emailVerificationToken = emailVerificationToken;
+  await user.save();
+
+  const verificationUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/auth/users/verifyEmail/${emailVerificationToken}`;
+
+  const htmlMessage = `
+	  <!DOCTYPE html>
+	  <html>
+	  <head>
+		<meta charset="UTF-8">
+		<title>Email Verification</title>
+		<style>
+		  body {
+			font-family: Arial, sans-serif;
+			line-height: 1.6;
+			color: #333;
+		  }
+		  .container {
+			max-width: 600px;
+			margin: 0 auto;
+			padding: 20px;
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			background-color: #f9f9f9;
+		  }
+		  .header {
+			text-align: center;
+			padding-bottom: 20px;
+		  }
+		  .content {
+			padding: 20px;
+			background-color: #fff;
+			border-radius: 5px;
+		  }
+		  .footer {
+			text-align: center;
+			padding-top: 20px;
+			font-size: 0.9em;
+			color: #777;
+		  }
+		</style>
+	  </head>
+	  <body>
+		<div class="container">
+		  <div class="header">
+			<h2>Email Verification</h2>
+		  </div>
+		  <div class="content">
+			<p>Dear ${user.name},</p>
+			<p>Please verify your email by clicking on the following link:</p>
+			<p><a href="${verificationUrl}">${verificationUrl}</a></p>
+			<p>If you did not create an account, no further action is required.</p>
+			<p>Thank you for your attention.</p>
+		  </div>
+		  <div class="footer">
+			<p>&copy; 2025 TalentHive. All rights reserved.</p>
+		  </div>
+		</div>
+	  </body>
+	  </html>
+	`;
+
+  await sendEmail({
+    email: user.email,
+    subject: "Email Verification",
+    message: `Please verify your email by clicking on the following link: \n\n ${verificationUrl}`,
+    html: htmlMessage,
+  });
+
+  return res.status(200).json(new ApiResponse(200, "Email sent successfully"));
 });
 
 export {
@@ -384,4 +547,6 @@ export {
   sendPasswordResetEmail,
   resetPassword,
   setProfile,
+  isEmailVerified,
+  resendVerificationEmail,
 };
