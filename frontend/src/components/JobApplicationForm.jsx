@@ -1,27 +1,25 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Input from "./Input";
 import Button from "./Button";
 import Alert from "./Alert";
-import { jobService } from "../utils/ApiService";
+import { jobseekerService } from "../utils/ApiService";
 
-const JobApplicationForm = ({ jobId, onSuccess, onCancel }) => {
+const JobApplicationForm = ({ job, onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
     coverLetter: "",
-    resumeUrl: "",
-    phoneNumber: "",
-    availability: "Immediately",
-    portfolioUrl: "",
-    additionalInfo: "",
+    resume: null,
   });
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, files } = e.target;
+    if (name === "resume") {
+      setFormData({ ...formData, [name]: files[0] });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -31,24 +29,16 @@ const JobApplicationForm = ({ jobId, onSuccess, onCancel }) => {
     setSuccess("");
 
     try {
-      await jobService.applyForJob(jobId, formData);
+      const formDataToSend = new FormData();
+      formDataToSend.append("coverLetter", formData.coverLetter);
+      if (formData.resume) {
+        formDataToSend.append("resume", formData.resume);
+      }
+
+      await jobseekerService.applyForJob(job._id, formDataToSend);
       setSuccess("Application submitted successfully!");
-
-      // Reset form
-      setFormData({
-        coverLetter: "",
-        resumeUrl: "",
-        phoneNumber: "",
-        availability: "Immediately",
-        portfolioUrl: "",
-        additionalInfo: "",
-      });
-
-      // Call onSuccess callback
       if (onSuccess) {
-        setTimeout(() => {
-          onSuccess();
-        }, 1500);
+        onSuccess();
       }
     } catch (err) {
       setError(
@@ -67,110 +57,54 @@ const JobApplicationForm = ({ jobId, onSuccess, onCancel }) => {
       className="w-full"
     >
       {error && <Alert type="error" message={error} className="mb-4" />}
-
       {success && <Alert type="success" message={success} className="mb-4" />}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            id="resumeUrl"
-            name="resumeUrl"
-            label="Resume URL"
-            value={formData.resumeUrl}
-            onChange={handleChange}
-            placeholder="Link to your resume (Google Drive, Dropbox, etc.)"
-            required
-          />
-
-          <Input
-            id="phoneNumber"
-            name="phoneNumber"
-            label="Phone Number"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            placeholder="e.g. +1 (123) 456-7890"
-            required
-          />
-
-          <div>
-            <label
-              htmlFor="availability"
-              className="block text-sm font-medium mb-1 text-gray-700"
-            >
-              Availability
-            </label>
-            <select
-              id="availability"
-              name="availability"
-              value={formData.availability}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="Immediately">Immediately</option>
-              <option value="1 week">1 week</option>
-              <option value="2 weeks">2 weeks</option>
-              <option value="1 month">1 month</option>
-              <option value="More than 1 month">More than 1 month</option>
-            </select>
-          </div>
-
-          <Input
-            id="portfolioUrl"
-            name="portfolioUrl"
-            label="Portfolio URL (Optional)"
-            value={formData.portfolioUrl}
-            onChange={handleChange}
-            placeholder="e.g. https://yourportfolio.com"
-          />
-        </div>
-
         <div>
-          <label
-            htmlFor="coverLetter"
-            className="block text-sm font-medium mb-1 text-gray-700"
-          >
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Cover Letter
           </label>
           <textarea
-            id="coverLetter"
             name="coverLetter"
             value={formData.coverLetter}
             onChange={handleChange}
-            rows={6}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Introduce yourself and explain why you're a good fit for this position..."
             required
-          ></textarea>
+            rows={6}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Write your cover letter here..."
+          />
         </div>
 
         <div>
-          <label
-            htmlFor="additionalInfo"
-            className="block text-sm font-medium mb-1 text-gray-700"
-          >
-            Additional Information (Optional)
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Resume (PDF)
           </label>
-          <textarea
-            id="additionalInfo"
-            name="additionalInfo"
-            value={formData.additionalInfo}
+          <input
+            type="file"
+            name="resume"
             onChange={handleChange}
-            rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Any additional information you'd like to share..."
-          ></textarea>
+            accept=".pdf"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Upload your resume in PDF format
+          </p>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex gap-2">
+          <Button type="submit" loading={loading} className="flex-1">
+            Submit Application
+          </Button>
           {onCancel && (
-            <Button type="button" variant="secondary" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="flex-1"
+            >
               Cancel
             </Button>
           )}
-          <Button type="submit" variant="primary" isLoading={loading}>
-            Submit Application
-          </Button>
         </div>
       </form>
     </motion.div>

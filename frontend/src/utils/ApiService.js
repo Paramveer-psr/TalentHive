@@ -102,28 +102,31 @@ export const jobService = {
 
 // Employer services
 export const employerService = {
-  getEmployerJobs: async (params) => {
-    return api.get(employerJobsRoute, { params });
-  },
-
   createJob: async (jobData) => {
-    return api.post(employerJobsRoute, jobData);
+    return api.post(`${jobsRoute}/create`, jobData);
   },
 
   updateJob: async (jobId, jobData) => {
-    return api.put(`${employerJobsRoute}/${jobId}`, jobData);
+    return api.put(`${jobsRoute}/${jobId}`, jobData);
+  },
+
+  getJobs: async (params) => {
+    return api.get(jobsRoute, { params });
+  },
+
+  getJob: async (jobId) => {
+    return api.get(`${jobsRoute}/${jobId}`);
   },
 
   deleteJob: async (jobId) => {
-    return api.delete(`${employerJobsRoute}/${jobId}`);
+    return api.delete(`${jobsRoute}/${jobId}`);
   },
 
-  getJobApplications: async (jobId) => {
-    return api.get(`${employerJobsRoute}/${jobId}/applications`);
-  },
-
-  updateApplicationStatus: async (applicationId, status) => {
-    return api.put(`${applyJobRoute}/${applicationId}/status`, { status });
+  updateApplicationStatus: async (jobId, applicationId, statusData) => {
+    return api.put(
+      `${jobsRoute}/${jobId}/applications/${applicationId}/status`,
+      statusData
+    );
   },
 
   getCompanyProfile: async () => {
@@ -132,6 +135,29 @@ export const employerService = {
 
   updateCompanyProfile: async (profileData) => {
     return api.put(companyProfileRoute, profileData);
+  },
+};
+
+// Jobseeker services
+export const jobseekerService = {
+  getRecommendedJobs: async (params) => {
+    return api.get(`${jobsRoute}/recommended`, { params });
+  },
+
+  getJob: async (jobId) => {
+    return api.get(`${jobsRoute}/${jobId}`);
+  },
+
+  applyForJob: async (jobId, applicationData) => {
+    return api.post(`${jobsRoute}/${jobId}/apply`, applicationData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  getUserApplications: async () => {
+    return api.get(`${jobsRoute}/applications`);
   },
 };
 

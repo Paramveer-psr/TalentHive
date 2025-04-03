@@ -406,7 +406,7 @@ const setProfile = asyncHandler(async (req, res) => {
         phone,
         location,
       } = req.body;
-      console.log(req.body);
+      // console.log(req.body);
       if (
         [companyName, phone, location, companySize, industry, description].some(
           (field) => field?.trim() === ""

@@ -19,6 +19,9 @@ import {
 } from "@heroicons/react/24/outline";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import SimpleFooter from "../components/SimpleFooter";
+import JobForm from "../components/JobForm";
+import { employerService } from "../utils/ApiService";
 
 // Mock data for posted jobs
 const MOCK_JOBS = [
@@ -133,14 +136,17 @@ const EmployerDashboard = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [dateFilter, setDateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [newJob, setNewJob] = useState({
     title: "",
+    companyName: "",
     location: "",
-    type: "Full-time",
-    salary: "",
     description: "",
-    requirements: "",
+    skills: "",
+    experience: "Entry Level",
+    isActive: true,
   });
 
   // Get user data and fetch jobs
@@ -149,12 +155,24 @@ const EmployerDashboard = () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     setUser(userData);
 
-    // Simulate API call to fetch jobs
-    setTimeout(() => {
-      setJobs(MOCK_JOBS);
-      setFilteredJobs(MOCK_JOBS);
-      setLoading(false);
-    }, 1000);
+    // Fetch jobs from API
+    const fetchJobs = async () => {
+      try {
+        const response = await employerService.getJobs();
+        setJobs(response.data.data || []);
+        setFilteredJobs(response.data.data || []);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+        setError("Failed to load jobs. Please try again.");
+        // Fallback to mock data if API fails
+        setJobs(MOCK_JOBS);
+        setFilteredJobs(MOCK_JOBS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
   }, []);
 
   // Filter jobs based on search term and filters
@@ -177,7 +195,7 @@ const EmployerDashboard = () => {
       const ninetyDaysAgo = new Date(now.setDate(now.getDate() - 90));
 
       results = results.filter((job) => {
-        const jobDate = new Date(job.posted);
+        const jobDate = new Date(job.posted || job.createdAt);
         if (dateFilter === "30days") {
           return jobDate >= thirtyDaysAgo;
         } else if (dateFilter === "90days") {
@@ -190,7 +208,10 @@ const EmployerDashboard = () => {
     // Apply status filter
     if (statusFilter !== "all") {
       results = results.filter(
-        (job) => job.status.toLowerCase() === statusFilter.toLowerCase()
+        (job) =>
+          job.status?.toLowerCase() === statusFilter.toLowerCase() ||
+          (statusFilter === "active" && job.isActive) ||
+          (statusFilter === "closed" && !job.isActive)
       );
     }
 
@@ -207,87 +228,73 @@ const EmployerDashboard = () => {
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Handle job creation
-  const handleCreateJob = (e) => {
-    e.preventDefault();
-
-    // Validate form
-    if (
-      !newJob.title ||
-      !newJob.location ||
-      !newJob.salary ||
-      !newJob.description
-    ) {
-      alert("Please fill in all required fields");
-      return;
+  // Handle job creation via JobForm
+  const handleCreateJob = async (jobData) => {
+    try {
+      const response = await employerService.createJob(jobData);
+      // Add the new job to the list
+      const newJobData = response.data.data;
+      setJobs([newJobData, ...jobs]);
+      setSuccess("Job created successfully!");
+      setShowPostJobModal(false);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to create job. Please try again."
+      );
     }
-
-    // Create new job object
-    const job = {
-      id: jobs.length + 1,
-      ...newJob,
-      applications: 0,
-      views: 0,
-      status: "Active",
-      posted: new Date().toISOString().split("T")[0],
-      requirements: newJob.requirements
-        .split("\n")
-        .filter((req) => req.trim() !== ""),
-    };
-
-    // Add to jobs list
-    setJobs([job, ...jobs]);
-
-    // Reset form and close modal
-    setNewJob({
-      title: "",
-      location: "",
-      type: "Full-time",
-      salary: "",
-      description: "",
-      requirements: "",
-    });
-    setShowPostJobModal(false);
   };
 
   // Handle job deletion
-  const handleDeleteJob = () => {
+  const handleDeleteJob = async () => {
     if (!selectedJob) return;
 
-    // Filter out the selected job
-    const updatedJobs = jobs.filter((job) => job.id !== selectedJob.id);
-    setJobs(updatedJobs);
+    try {
+      // Call API to delete job
+      if (selectedJob._id) {
+        await employerService.deleteJob(selectedJob._id);
+      }
 
-    // Close modal and reset selected job
-    setShowDeleteModal(false);
-    setSelectedJob(null);
+      // Filter out the selected job
+      const updatedJobs = jobs.filter((job) =>
+        job._id ? job._id !== selectedJob._id : job.id !== selectedJob.id
+      );
+      setJobs(updatedJobs);
+      setSuccess("Job deleted successfully!");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to delete job. Please try again."
+      );
+    } finally {
+      // Close modal and reset selected job
+      setShowDeleteModal(false);
+      setSelectedJob(null);
+    }
   };
 
-  // Handle input change for new job form
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewJob((prev) => ({ ...prev, [name]: value }));
+  // Handle edit job navigation
+  const handleEditJob = (job) => {
+    navigate(`/employer/jobs/edit/${job._id || job.id}`);
   };
 
   return (
     <>
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="min-h-screen bg-gray-50">
-        {/* Header
-      <div className="bg-primary text-white py-6 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold">Employer Dashboard</h1>
-          {user && (
-            <p className="mt-2">
-              Welcome back, {user.name}! Manage your job listings and track
-              applications.
-            </p>
-          )}
+        {/* Header */}
+        <div className="bg-primary text-gray-700 py-6 px-4 md:px-8">
+          <div className="max-w-7xl mx-auto">
+            <Navbar />
+            {user && (
+              <p className="mt-10 ">
+                Welcome back, {user.name}! Manage your job listings and track
+                applications.
+              </p>
+            )}
+          </div>
         </div>
-      </div> */}
 
         {/* Stats Overview */}
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 ">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <motion.div
               whileHover={{ y: -5 }}
@@ -297,7 +304,11 @@ const EmployerDashboard = () => {
                 <div>
                   <p className="text-gray-500 text-sm">Active Jobs</p>
                   <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {jobs.filter((job) => job.status === "Active").length}
+                    {
+                      jobs.filter(
+                        (job) => job.isActive || job.status === "Active"
+                      ).length
+                    }
                   </h3>
                 </div>
                 <div className="bg-blue-100 p-3 rounded-full">
@@ -314,7 +325,12 @@ const EmployerDashboard = () => {
                 <div>
                   <p className="text-gray-500 text-sm">Total Applications</p>
                   <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {jobs.reduce((total, job) => total + job.applications, 0)}
+                    {jobs.reduce(
+                      (total, job) =>
+                        total +
+                        (job.applications?.length || job.applications || 0),
+                      0
+                    )}
                   </h3>
                 </div>
                 <div className="bg-green-100 p-3 rounded-full">
@@ -331,7 +347,7 @@ const EmployerDashboard = () => {
                 <div>
                   <p className="text-gray-500 text-sm">Total Views</p>
                   <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {jobs.reduce((total, job) => total + job.views, 0)}
+                    {jobs.reduce((total, job) => total + (job.views || 0), 0)}
                   </h3>
                 </div>
                 <div className="bg-purple-100 p-3 rounded-full">
@@ -355,6 +371,18 @@ const EmployerDashboard = () => {
                 <span>Post New Job</span>
               </button>
             </div>
+
+            {/* Error and Success messages */}
+            {error && (
+              <div className="p-4 bg-red-100 text-red-700 border-l-4 border-red-500">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-4 bg-green-100 text-green-700 border-l-4 border-green-500">
+                {success}
+              </div>
+            )}
 
             {/* Filters and Search */}
             <div className="p-4 border-b bg-gray-50">
@@ -441,7 +469,7 @@ const EmployerDashboard = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentJobs.map((job) => (
                       <motion.tr
-                        key={job.id}
+                        key={job._id || job.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
@@ -457,36 +485,34 @@ const EmployerDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500">
-                            {job.posted}
+                            {job.posted ||
+                              new Date(job.createdAt).toLocaleDateString()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {job.applications}
+                            {job.applications?.length || job.applications || 0}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {job.views} views
+                            {job.views || 0} views
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              job.status === "Active"
+                              job.status === "Active" || job.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {job.status}
+                            {job.status ||
+                              (job.isActive ? "Active" : "Inactive")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            onClick={() => {
-                              setSelectedJob(job);
-                              // In a real app, you would navigate to an edit page or open an edit modal
-                              console.log("Edit job:", job);
-                            }}
+                            onClick={() => handleEditJob(job)}
                           >
                             <PencilIcon className="h-5 w-5" />
                           </button>
@@ -580,117 +606,10 @@ const EmployerDashboard = () => {
               </div>
 
               <div className="p-6">
-                <form onSubmit={handleCreateJob} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Job Title*
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={newJob.title}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Senior React Developer"
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location*
-                      </label>
-                      <input
-                        type="text"
-                        name="location"
-                        value={newJob.location}
-                        onChange={handleInputChange}
-                        placeholder="e.g. San Francisco, CA or Remote"
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Job Type*
-                      </label>
-                      <select
-                        name="type"
-                        value={newJob.type}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                        required
-                      >
-                        <option value="Full-time">Full-time</option>
-                        <option value="Part-time">Part-time</option>
-                        <option value="Contract">Contract</option>
-                        <option value="Internship">Internship</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Salary Range*
-                    </label>
-                    <input
-                      type="text"
-                      name="salary"
-                      value={newJob.salary}
-                      onChange={handleInputChange}
-                      placeholder="e.g. $80,000 - $100,000"
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Job Description*
-                    </label>
-                    <textarea
-                      name="description"
-                      value={newJob.description}
-                      onChange={handleInputChange}
-                      placeholder="Describe the role, responsibilities, and ideal candidate..."
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                      rows="4"
-                      required
-                    ></textarea>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Requirements (one per line)
-                    </label>
-                    <textarea
-                      name="requirements"
-                      value={newJob.requirements}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 3+ years of experience with React&#10;Strong knowledge of JavaScript&#10;Experience with state management libraries"
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                      rows="4"
-                    ></textarea>
-                  </div>
-
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowPostJobModal(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                    >
-                      Post Job
-                    </button>
-                  </div>
-                </form>
+                <JobForm
+                  onSuccess={handleCreateJob}
+                  onCancel={() => setShowPostJobModal(false)}
+                />
               </div>
             </motion.div>
           </div>
@@ -734,7 +653,7 @@ const EmployerDashboard = () => {
           </div>
         )}
       </div>
-      <Footer />
+      <SimpleFooter />
     </>
   );
 };

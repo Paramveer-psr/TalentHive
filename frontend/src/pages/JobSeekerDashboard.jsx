@@ -12,6 +12,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon } from "@heroicons/react/24/solid";
+import Navbar from "../components/Navbar";
+import SimpleFooter from "../components/SimpleFooter";
 
 // Mock data for jobs
 const MOCK_JOBS = [
@@ -245,13 +247,11 @@ const JobSeekerDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-primary text-white py-6 px-4 md:px-8">
+      <div className="bg-primary text-black py-6 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Job Seeker Dashboard
-          </h1>
+          <Navbar />
           {user && (
-            <p className="mt-2">
+            <p className="mt-10">
               Welcome back, {user.name}! Find your perfect job match.
             </p>
           )}
@@ -259,7 +259,7 @@ const JobSeekerDashboard = () => {
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
         {/* Search and filter section */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -632,6 +632,7 @@ const JobSeekerDashboard = () => {
           </motion.div>
         </div>
       )}
+      <SimpleFooter />
     </div>
   );
 };
