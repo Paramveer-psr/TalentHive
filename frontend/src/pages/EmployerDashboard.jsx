@@ -134,6 +134,9 @@ const EmployerDashboard = () => {
   const [showPostJobModal, setShowPostJobModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [showJobDetails, setShowJobDetails] = useState(false);
+  const [applicants, setApplicants] = useState([]);
+  const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [dateFilter, setDateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [error, setError] = useState("");
@@ -249,32 +252,271 @@ const EmployerDashboard = () => {
     if (!selectedJob) return;
 
     try {
-      // Call API to delete job
-      if (selectedJob._id) {
-        await employerService.deleteJob(selectedJob._id);
-      }
-
-      // Filter out the selected job
-      const updatedJobs = jobs.filter((job) =>
-        job._id ? job._id !== selectedJob._id : job.id !== selectedJob.id
-      );
-      setJobs(updatedJobs);
+      await employerService.deleteJob(selectedJob._id);
+      setJobs(jobs.filter((job) => job._id !== selectedJob._id));
+      setFilteredJobs(filteredJobs.filter((job) => job._id !== selectedJob._id));
       setSuccess("Job deleted successfully!");
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to delete job. Please try again."
-      );
-    } finally {
-      // Close modal and reset selected job
       setShowDeleteModal(false);
       setSelectedJob(null);
+    } catch (err) {
+      setError("Failed to delete job. Please try again.");
     }
   };
 
   // Handle edit job navigation
   const handleEditJob = (job) => {
-    navigate(`/employer/jobs/edit/${job._id || job.id}`);
+    setSelectedJob(job);
+    setShowPostJobModal(true);
   };
+
+  // Handle update job
+  const handleUpdateJob = async (updatedJob) => {
+    try {
+      const response = await employerService.updateJob(selectedJob._id, updatedJob);
+      setJobs(
+        jobs.map((job) =>
+          job._id === selectedJob._id ? response.data.data : job
+        )
+      );
+      setFilteredJobs(
+        filteredJobs.map((job) =>
+          job._id === selectedJob._id ? response.data.data : job
+        )
+      );
+      setSuccess("Job updated successfully!");
+      setShowPostJobModal(false);
+      setSelectedJob(null);
+    } catch (err) {
+      setError("Failed to update job. Please try again.");
+    }
+  };
+
+  // Add this function to handle viewing job details and applicants
+  const handleViewJob = async (job) => {
+    setSelectedJob(job);
+    setShowJobDetails(true);
+    setLoadingApplicants(true);
+    
+    try {
+      const response = await employerService.getJob(job._id);
+      setSelectedJob(response.data.data);
+      setApplicants(response.data.data.applications || []);
+    } catch (err) {
+      setError("Failed to load job details. Please try again.");
+    } finally {
+      setLoadingApplicants(false);
+    }
+  };
+
+  // Add this component for the job details modal
+  const JobDetailsModal = ({ job, applicants, onClose, loading }) => {
+    if (!job) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-2xl font-bold">{job.title}</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="space-y-2">
+                <p className="flex items-center text-gray-600">
+                  <BriefcaseIcon className="h-5 w-5 mr-2" />
+                  {job.companyName}
+                </p>
+                <p className="flex items-center text-gray-600">
+                  <MapPinIcon className="h-5 w-5 mr-2" />
+                  {job.location}
+                </p>
+                <p className="flex items-center text-gray-600">
+                  <CurrencyDollarIcon className="h-5 w-5 mr-2" />
+                  {job.salary || "Not specified"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="flex items-center text-gray-600">
+                  <ClockIcon className="h-5 w-5 mr-2" />
+                  Posted: {new Date(job.createdAt).toLocaleDateString()}
+                </p>
+                <p className="flex items-center text-gray-600">
+                  <UserGroupIcon className="h-5 w-5 mr-2" />
+                  {applicants.length} Applicants
+                </p>
+                <p className="flex items-center text-gray-600">
+                  <EyeIcon className="h-5 w-5 mr-2" />
+                  {job.views || 0} Views
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Job Description</h3>
+              <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Required Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {job.skills?.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Applicants</h3>
+              {loading ? (
+                <div className="text-center py-4">Loading applicants...</div>
+              ) : applicants.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No applicants yet
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {applicants.map((applicant) => (
+                    <div
+                      key={applicant._id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold">{applicant.user?.name}</h4>
+                          <p className="text-gray-600">{applicant.user?.email}</p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            applicant.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : applicant.status === "accepted"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {applicant.status}
+                        </span>
+                      </div>
+                      <div className="mt-2">
+                        <a
+                          href={applicant.resume}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          View Resume
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Update the job card rendering to include the view button
+  const renderJobCard = (job) => (
+    <div
+      key={job._id}
+      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
+          <p className="text-gray-600 mb-1">{job.companyName}</p>
+          <p className="text-gray-600 mb-4">{job.location}</p>
+        </div>
+        <span
+          className={`px-3 py-1 rounded-full text-sm ${
+            job.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          }`}
+        >
+          {job.isActive ? "Active" : "Closed"}
+        </span>
+      </div>
+
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex items-center space-x-4">
+          <span className="flex items-center text-gray-600">
+            <UserGroupIcon className="h-5 w-5 mr-1" />
+            {job.applications?.length || 0} Applicants
+          </span>
+          <span className="flex items-center text-gray-600">
+            <EyeIcon className="h-5 w-5 mr-1" />
+            {job.views || 0} Views
+          </span>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handleViewJob(job)}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+            title="View Details"
+          >
+            <EyeIcon className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => handleEditJob(job)}
+            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-full"
+            title="Edit Job"
+          >
+            <PencilIcon className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => {
+              setSelectedJob(job);
+              setShowDeleteModal(true);
+            }}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+            title="Delete Job"
+          >
+            <TrashIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Add the delete confirmation modal
+  const DeleteConfirmationModal = ({ onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 className="text-lg font-semibold mb-4">Delete Job</h3>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete this job posting? This action cannot be
+          undone.
+        </p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -364,7 +606,10 @@ const EmployerDashboard = () => {
                 Your Job Listings
               </h2>
               <button
-                onClick={() => setShowPostJobModal(true)}
+                onClick={() => {
+                  setSelectedJob(null);
+                  setShowPostJobModal(true);
+                }}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >
                 <PlusIcon className="h-5 w-5" />
@@ -595,10 +840,13 @@ const EmployerDashboard = () => {
             >
               <div className="p-6 border-b sticky top-0 bg-white z-10 flex justify-between items-start">
                 <h3 className="text-xl font-bold text-gray-800">
-                  Post a New Job
+                  {selectedJob ? "Edit Job" : "Post a New Job"}
                 </h3>
                 <button
-                  onClick={() => setShowPostJobModal(false)}
+                  onClick={() => {
+                    setShowPostJobModal(false);
+                    setSelectedJob(null);
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -607,8 +855,19 @@ const EmployerDashboard = () => {
 
               <div className="p-6">
                 <JobForm
-                  onSuccess={handleCreateJob}
-                  onCancel={() => setShowPostJobModal(false)}
+                  initialData={selectedJob}
+                  onSuccess={(jobData) => {
+                    if (selectedJob) {
+                      handleUpdateJob(jobData);
+                    } else {
+                      handleCreateJob(jobData);
+                    }
+                  }}
+                  onCancel={() => {
+                    setShowPostJobModal(false);
+                    setSelectedJob(null);
+                  }}
+                  isEdit={!!selectedJob}
                 />
               </div>
             </motion.div>
@@ -617,40 +876,27 @@ const EmployerDashboard = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && selectedJob && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-xl shadow-xl max-w-md w-full"
-            >
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Confirm Deletion
-                </h3>
-                <p className="text-sm text-gray-500 mb-6">
-                  Are you sure you want to delete the job listing "
-                  {selectedJob.title}"? This action cannot be undone.
-                </p>
+          <DeleteConfirmationModal
+            onConfirm={handleDeleteJob}
+            onCancel={() => {
+              setShowDeleteModal(false);
+              setSelectedJob(null);
+            }}
+          />
+        )}
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteJob}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+        {/* Add JobDetailsModal */}
+        {showJobDetails && (
+          <JobDetailsModal
+            job={selectedJob}
+            applicants={applicants}
+            onClose={() => {
+              setShowJobDetails(false);
+              setSelectedJob(null);
+              setApplicants([]);
+            }}
+            loading={loadingApplicants}
+          />
         )}
       </div>
       <SimpleFooter />
