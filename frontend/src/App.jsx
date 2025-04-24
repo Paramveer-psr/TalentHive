@@ -14,6 +14,7 @@ import MyApplications from "./pages/MyApplications";
 import CompanyProfile from "./pages/CompanyProfile";
 import EmployerJobs from "./pages/EmployerJobs";
 import EmployerApplications from "./pages/EmployerApplications";
+import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -36,10 +37,8 @@ const App = () => {
         <Route path="/employer-dashboard" element={<EmployerDashboard />} />
         <Route path="/employer/company-profile" element={<CompanyProfile />} />
         <Route path="/employer/jobs" element={<EmployerJobs />} />
-        <Route
-          path="/employer/applications"
-          element={<EmployerApplications />}
-        />
+        <Route path="/employer/applications" element={<EmployerApplications />} />
+        <Route path="/post-job" element={<PostJob />} />
 
         {/* Admin Routes */}
         <Route path="/admin-panel" element={<AdminPanel />} />
