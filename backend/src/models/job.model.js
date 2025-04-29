@@ -23,7 +23,22 @@ const jobSchema = new Schema(
       trim: true,
     },
     skills: [String],
-    experience: Number,
+    experience: {
+      type: String,
+      enum: [
+        "Entry Level",
+        "Mid Level",
+        "Senior Level",
+        "Internship",
+        "Fresher",
+      ],
+      default: "Entry Level",
+    },
+    jobType: {
+      type: String,
+      enum: ["Full-time", "Part-time", "Contract", "Internship"],
+      default: "Full-time",
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -33,26 +48,31 @@ const jobSchema = new Schema(
       ref: "User",
       required: true,
     },
-    applications: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        appliedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        status: {
-          type: String,
-          enum: ["pending", "reviewed", "accepted", "rejected"],
-          default: "pending",
-        },
-        resume: String,
-        coverLetter: String,
-      },
-    ],
+    salary: {
+      type: Number,
+      required: true,
+    },
+
+    // applications: [
+    //   {
+    //     user: {
+    //       type: Schema.Types.ObjectId,
+    //       ref: "User",
+    //       required: true,
+    //     },
+    //     appliedAt: {
+    //       type: Date,
+    //       default: Date.now,
+    //     },
+    //     status: {
+    //       type: String,
+    //       enum: ["pending", "reviewed", "accepted", "rejected"],
+    //       default: "pending",
+    //     },
+    //     resume: String,
+    //     coverLetter: String,
+    //   },
+    // ],
   },
   {
     timestamps: true,

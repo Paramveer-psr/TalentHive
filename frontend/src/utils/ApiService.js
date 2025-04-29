@@ -84,7 +84,7 @@ export const authService = {
 // Job services
 export const jobService = {
   getAllJobs: async (params) => {
-    return api.get(jobsRoute, { params });
+    return api.get(`${jobsRoute}/recommended`, { params });
   },
 
   getJobById: async (jobId) => {

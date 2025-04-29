@@ -13,33 +13,21 @@ const PostJob = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleCreateJob = async (jobData) => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
+  const handleJobCreated = (jobData) => {
+    // Don't create the job again - it's already created in JobForm
+    setSuccess("Job posted successfully!");
 
-    try {
-      const response = await employerService.createJob(jobData);
-      setSuccess("Job posted successfully!");
-      
-      // Redirect to employer dashboard after 2 seconds
-      setTimeout(() => {
-        navigate("/employer-dashboard");
-      }, 2000);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to post job. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+    // Redirect to employer dashboard after 2 seconds
+    setTimeout(() => {
+      navigate("/employer-dashboard");
+    }, 2000);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
+
+      <main className="container mx-auto px-4 py-8 mt-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -48,17 +36,21 @@ const PostJob = () => {
         >
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">Post a New Job</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Post a New Job
+              </h1>
               <p className="text-gray-600 mt-2">
                 Fill out the form below to create a new job posting
               </p>
             </div>
 
             {error && <Alert type="error" message={error} className="mb-6" />}
-            {success && <Alert type="success" message={success} className="mb-6" />}
+            {success && (
+              <Alert type="success" message={success} className="mb-6" />
+            )}
 
             <JobForm
-              onSuccess={handleCreateJob}
+              onSuccess={handleJobCreated}
               onCancel={() => navigate("/employer-dashboard")}
               loading={loading}
             />
@@ -71,4 +63,4 @@ const PostJob = () => {
   );
 };
 
-export default PostJob; 
+export default PostJob;

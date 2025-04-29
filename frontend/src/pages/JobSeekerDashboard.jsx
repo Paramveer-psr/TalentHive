@@ -14,6 +14,8 @@ import {
 import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "../components/Navbar";
 import SimpleFooter from "../components/SimpleFooter";
+import { jobService } from "../utils/ApiService";
+import { data } from "react-router-dom";
 
 // Mock data for jobs
 const MOCK_JOBS = [
@@ -161,6 +163,33 @@ const JobSeekerDashboard = () => {
     salary: "",
   });
 
+  // Add this function inside your component or in a separate utils file
+  const getTimeAgo = (timestamp) => {
+    if (!timestamp) return "Unknown date";
+
+    const now = new Date();
+    const postDate = new Date(timestamp);
+    const diffTime = Math.abs(now - postDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+    if (diffDays > 30) {
+      const diffMonths = Math.floor(diffDays / 30);
+      return diffMonths === 1 ? "1 month ago" : `${diffMonths} months ago`;
+    } else if (diffDays > 0) {
+      return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+    } else if (diffHours > 0) {
+      return diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago`;
+    } else if (diffMinutes > 0) {
+      return diffMinutes === 1 ? "1 minute ago" : `${diffMinutes} minutes ago`;
+    } else {
+      return "Just now";
+    }
+  };
+
+  // console.log(selectedJob);
+
   // Get user data and fetch jobs
   useEffect(() => {
     // Get user from localStorage
@@ -168,11 +197,22 @@ const JobSeekerDashboard = () => {
     setUser(userData);
 
     // Simulate API call to fetch jobs
-    setTimeout(() => {
-      setJobs(MOCK_JOBS);
-      setFilteredJobs(MOCK_JOBS);
-      setLoading(false);
-    }, 1000);
+    const fetchJobs = async () => {
+      try {
+        const { data } = await jobService.getAllJobs();
+        // console.log(data);
+        setTimeout(() => {
+          setJobs(data.data);
+          setFilteredJobs(MOCK_JOBS);
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
   }, []);
 
   // Filter jobs based on search term and filters
@@ -394,7 +434,7 @@ const JobSeekerDashboard = () => {
                       <h3 className="text-lg font-semibold text-gray-800">
                         {job.title}
                       </h3>
-                      <p className="text-gray-600 mt-1">{job.company}</p>
+                      <p className="text-gray-600 mt-1">{job.companyName}</p>
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500">
                         <span className="flex items-center">
                           <MapPinIcon className="h-4 w-4 mr-1" />
@@ -406,11 +446,13 @@ const JobSeekerDashboard = () => {
                         </span>
                         <span className="flex items-center">
                           <BriefcaseIcon className="h-4 w-4 mr-1" />
-                          {job.type}
+                          {job.jobType}
                         </span>
                         <span className="flex items-center">
                           <ClockIcon className="h-4 w-4 mr-1" />
-                          {job.posted}
+                          {job.createdAt
+                            ? getTimeAgo(job.createdAt)
+                            : "Recently posted"}
                         </span>
                       </div>
                     </div>
@@ -420,7 +462,7 @@ const JobSeekerDashboard = () => {
                           e.stopPropagation();
                           handleJobSelect(job);
                         }}
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-400/90 transition-colors"
                       >
                         Apply Now
                       </button>
@@ -472,8 +514,8 @@ const JobSeekerDashboard = () => {
                             onClick={() => paginate(pageNumber)}
                             className={`px-3 py-1 rounded-md ${
                               currentPage === pageNumber
-                                ? "bg-primary text-white"
-                                : "text-gray-700 hover:bg-gray-100"
+                                ? "bg-primary text-gray-700"
+                                : "text-gray-400 hover:bg-gray-100"
                             }`}
                           >
                             {pageNumber}
@@ -523,7 +565,7 @@ const JobSeekerDashboard = () => {
                   {selectedJob.title}
                 </h3>
                 <p className="text-gray-600">
-                  {selectedJob.company} • {selectedJob.location}
+                  {selectedJob.companyName} • {selectedJob.location}
                 </p>
               </div>
               <button
@@ -542,7 +584,7 @@ const JobSeekerDashboard = () => {
                     <BriefcaseIcon className="h-5 w-5 text-gray-500 mr-2" />
                     <span>
                       <span className="font-medium">Job Type:</span>{" "}
-                      {selectedJob.type}
+                      {selectedJob.jobType}
                     </span>
                   </div>
                   <div className="flex items-center">
@@ -556,7 +598,9 @@ const JobSeekerDashboard = () => {
                     <ClockIcon className="h-5 w-5 text-gray-500 mr-2" />
                     <span>
                       <span className="font-medium">Posted:</span>{" "}
-                      {selectedJob.posted}
+                      {selectedJob.createdAt
+                        ? getTimeAgo(selectedJob.createdAt)
+                        : "Recently posted"}
                     </span>
                   </div>
                 </div>
@@ -621,7 +665,7 @@ const JobSeekerDashboard = () => {
                     </button>
                     <button
                       type="button"
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                      className="px-4 py-2 bg-primary text-gray-800 rounded-lg hover:bg-primary/90"
                     >
                       Submit Application
                     </button>

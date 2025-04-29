@@ -21,9 +21,6 @@ const JobForm = ({
     salary: "",
     jobType: "Full-time",
     isActive: true,
-    requirements: "",
-    benefits: "",
-    applicationDeadline: "",
   };
 
   const [formData, setFormData] = useState(initialData || defaultFormData);
@@ -35,8 +32,8 @@ const JobForm = ({
     if (initialData) {
       setFormData({
         ...initialData,
-        skills: Array.isArray(initialData.skills) 
-          ? initialData.skills.join(", ") 
+        skills: Array.isArray(initialData.skills)
+          ? initialData.skills.join(", ")
           : initialData.skills,
         requirements: Array.isArray(initialData.requirements)
           ? initialData.requirements.join("\n")
@@ -67,14 +64,15 @@ const JobForm = ({
       const formattedData = {
         ...formData,
         skills: formData.skills.split(",").map((skill) => skill.trim()),
-        requirements: formData.requirements.split("\n").filter(Boolean),
-        benefits: formData.benefits.split("\n").filter(Boolean),
-        applicationDeadline: formData.applicationDeadline || null,
       };
+      console.log("Formatted Data:", formattedData);
 
       let response;
       if (isEdit && initialData?._id) {
-        response = await employerService.updateJob(initialData._id, formattedData);
+        response = await employerService.updateJob(
+          initialData._id,
+          formattedData
+        );
         setSuccess("Job updated successfully!");
       } else {
         response = await employerService.createJob(formattedData);
@@ -180,7 +178,7 @@ const JobForm = ({
             </select>
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Application Deadline
             </label>
@@ -191,7 +189,7 @@ const JobForm = ({
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-          </div>
+          </div> */}
         </div>
 
         <div>
@@ -223,7 +221,7 @@ const JobForm = ({
           />
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Requirements (one per line)
           </label>
@@ -236,9 +234,9 @@ const JobForm = ({
             placeholder="Enter each requirement on a new line"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-        </div>
+        </div> */}
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Benefits (one per line)
           </label>
@@ -250,7 +248,7 @@ const JobForm = ({
             placeholder="Enter each benefit on a new line"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-        </div>
+        </div> */}
 
         <div className="flex items-center">
           <input
@@ -266,14 +264,49 @@ const JobForm = ({
         </div>
 
         <div className="flex gap-2">
-          <Button type="submit" loading={loading} className="flex-1">
-            {isEdit ? "Update Job" : "Create Job"}
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={loading}
+            className="flex-1"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {isEdit ? "Updating..." : "Creating..."}
+              </span>
+            ) : isEdit ? (
+              "Update Job"
+            ) : (
+              "Create Job"
+            )}
           </Button>
+
           {onCancel && (
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
+              disabled={loading}
               className="flex-1"
             >
               Cancel

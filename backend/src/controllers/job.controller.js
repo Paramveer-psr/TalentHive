@@ -6,32 +6,55 @@ import { User } from "../models/user.model.js";
 import axios from "axios";
 
 const createJob = asyncHandler(async (req, res) => {
-  const { title, description, skills, experience, location, companyName } =
-    req.body;
-  const employer = req.user._id;
+  // console.log("Creating job...");
+  try {
+    // console.log("Request body:", req.body);
+    const {
+      title,
+      description,
+      skills,
+      experience,
+      location,
+      companyName,
+      jobType,
+      salary,
+    } = req.body;
+    const employer = req.user._id;
 
-  if (
-    !title ||
-    !description ||
-    !skills ||
-    !experience ||
-    !location ||
-    !companyName
-  ) {
-    throw new ApiError(400, "All fields are required");
+    const missingFields = [];
+    if (!title) missingFields.push("title");
+    if (!description) missingFields.push("description");
+    if (!skills) missingFields.push("skills");
+    if (!experience) missingFields.push("experience");
+    if (!location) missingFields.push("location");
+    if (!companyName) missingFields.push("companyName");
+    if (!jobType) missingFields.push("jobType");
+    if (!salary) missingFields.push("salary");
+
+    if (missingFields.length > 0) {
+      throw new ApiError(
+        400,
+        `Missing required fields: ${missingFields.join(", ")}`
+      );
+    }
+
+    const job = await Job.create({
+      title,
+      description,
+      skills,
+      experience,
+      location,
+      companyName,
+      salary,
+      jobType,
+      employer,
+    });
+
+    res.status(201).json(new ApiResponse(201, job, "Job Creation Successful."));
+  } catch (error) {
+    console.error("Error creating job:", error);
+    throw new ApiError(500, "Internal Server Error");
   }
-
-  const job = await Job.create({
-    title,
-    description,
-    skills,
-    experience,
-    location,
-    companyName,
-    employer,
-  });
-
-  res.status(201).json(new ApiResponse(201, job, "Job Creation Successful."));
 });
 
 const updateJob = asyncHandler(async (req, res) => {
@@ -43,8 +66,12 @@ const updateJob = asyncHandler(async (req, res) => {
     experience,
     location,
     companyName,
+    jobType,
+    salary,
     isActive,
   } = req.body;
+
+  // console.log(typeof isActive, isActive);
 
   const job = await Job.findById(id);
 
@@ -66,6 +93,8 @@ const updateJob = asyncHandler(async (req, res) => {
       location,
       companyName,
       isActive,
+      jobType,
+      salary,
     },
     { new: true }
   );
@@ -77,7 +106,7 @@ const updateJob = asyncHandler(async (req, res) => {
 
 const getJobs = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
-  const jobs = await Job.find({ isActive: true })
+  const jobs = await Job.find({ employer: req.user._id })
     .limit(limit * 1)
     .skip((page - 1) * limit)
     .populate("employer", "name email");
@@ -101,30 +130,60 @@ const getJob = asyncHandler(async (req, res) => {
 });
 
 const getJobsForUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    console.log("Fetching jobs for user...");
+    const user = await User.findById(req.user._id);
 
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  const jobs = await Job.find({ isActive: true });
-
-  const response = await axios.post(
-    `${process.env.AISERVICE_URL}/api/v1/job-matcher`,
-    {
-      skills: user.skills,
-      experience: user.experience,
-      jobs,
+    if (!user) {
+      throw new ApiError(404, "User not found");
     }
-  );
 
-  const recommendedJobs = response.data.matched_jobs;
+    const jobs = await Job.find({ isActive: true });
 
-  res.status(200).json(
-    new ApiResponse(200, recommendedJobs, "Jobs Fetched Successfully.", {
-      total: await Job.countDocuments({ isActive: true }),
-    })
-  );
+    // Map experience strings to numeric values for the AI service
+    const experienceMap = {
+      "Entry Level": 0,
+      Internship: 0,
+      Fresher: 0,
+      "Mid Level": 3,
+      "Senior Level": 5,
+      Executive: 8,
+    };
+
+    // Convert user's experience to numeric value
+    const userExperienceNumeric = experienceMap[user.experience] || 0;
+
+    // Prepare jobs data with numeric experience values
+    const jobsForMatching = jobs.map((job) => {
+      // Convert to a plain JavaScript object that can be serialized to JSON
+      const jobObj = job.toObject ? job.toObject() : { ...job };
+
+      // Add numeric experience value
+      jobObj.experienceNumeric = experienceMap[jobObj.experience] || 0;
+
+      return jobObj;
+    });
+
+    const response = await axios.post(
+      `${process.env.AISERVICE_URL}/api/v1/job-matcher`,
+      {
+        skills: user.skills,
+        experience: userExperienceNumeric,
+        jobs: jobsForMatching,
+      }
+    );
+
+    const recommendedJobs = response.data.matched_jobs;
+
+    res.status(200).json(
+      new ApiResponse(200, recommendedJobs, "Jobs Fetched Successfully.", {
+        total: await Job.countDocuments({ isActive: true }),
+      })
+    );
+  } catch (error) {
+    console.error("Error fetching jobs for user:", error);
+    throw new ApiError(500, "Internal Server Error");
+  }
 });
 
 const applyForJob = asyncHandler(async (req, res) => {
@@ -195,6 +254,32 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
     );
 });
 
+const deleteJob = asyncHandler(async (req, res) => {
+  // console.log(req.params);
+  try {
+    const { id } = req.params;
+
+    const job = await Job.findById(id);
+
+    if (!job) {
+      throw new ApiError(404, "Job not found");
+    }
+
+    if (job.employer.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, "You can only delete your own jobs");
+    }
+
+    await job.deleteOne();
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Job deleted successfully."));
+  } catch (error) {
+    console.error("Error deleting job:", error);
+    throw new ApiError(500, "Internal Server Error");
+  }
+});
+
 export {
   createJob,
   getJobs,
@@ -203,4 +288,5 @@ export {
   updateJob,
   applyForJob,
   updateApplicationStatus,
+  deleteJob,
 };
