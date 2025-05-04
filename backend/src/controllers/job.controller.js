@@ -4,6 +4,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import axios from "axios";
+import { Application } from "../models/application.model.js";
+import mongoose from "mongoose";
 
 const createJob = asyncHandler(async (req, res) => {
   // console.log("Creating job...");
@@ -201,25 +203,27 @@ const applyForJob = asyncHandler(async (req, res) => {
   }
 
   // Check if user has already applied
-  const hasApplied = job.applications.some(
-    (app) => app.user.toString() === req.user._id.toString()
-  );
+  const hasApplied = await Application.findOne({
+    job: id,
+    user: req.user._id,
+  });
 
   if (hasApplied) {
     throw new ApiError(400, "You have already applied for this job");
   }
 
-  job.applications.push({
+  const application = await Application.create({
+    job: id,
     user: req.user._id,
     resume,
     coverLetter,
   });
 
-  await job.save();
-
   res
     .status(200)
-    .json(new ApiResponse(200, job, "Application submitted successfully."));
+    .json(
+      new ApiResponse(200, application, "Application submitted successfully.")
+    );
 });
 
 const updateApplicationStatus = asyncHandler(async (req, res) => {
@@ -280,6 +284,128 @@ const deleteJob = asyncHandler(async (req, res) => {
   }
 });
 
+const myApplications = asyncHandler(async (req, res) => {
+  try {
+    const id = req.user._id;
+    const applications = await Application.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: "jobs",
+          localField: "job",
+          foreignField: "_id",
+          as: "jobDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $project: {
+          status: 1,
+          coverLetter: 1,
+          resume: 1,
+          "jobDetails.title": 1,
+          "jobDetails.companyName": 1,
+          "jobDetails.location": 1,
+          "jobDetails._id": 1,
+          "userDetails.name": 1,
+          "userDetails.email": 1,
+          createdAt: 1,
+        },
+      },
+      {
+        $unwind: "$jobDetails",
+      },
+      {
+        $unwind: "$userDetails",
+      },
+    ]);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          applications,
+          "User Applications Fetched Successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error fetching user applications:", error);
+    throw new ApiError(500, "Internal Server Error");
+  }
+});
+
+const employerApplications = asyncHandler(async (req, res) => {
+  // const { id } = req.params;
+  const applications = await Application.aggregate([
+    // {
+    //   $match: {
+    //     job: new mongoose.Types.ObjectId(id),
+    //   },
+    // },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "job",
+        foreignField: "_id",
+        as: "jobDetails",
+      },
+    },
+
+    {
+      $project: {
+        status: 1,
+        coverLetter: 1,
+        resume: 1,
+        "userDetails.name": 1,
+        "userDetails.email": 1,
+        "jobDetails.title": 1,
+        "jobDetails._id": 1,
+        "jobDetails.companyName": 1,
+        "jobDetails.location": 1,
+        createdAt: 1,
+      },
+    },
+    {
+      $unwind: "$userDetails",
+    },
+    {
+      $unwind: "$jobDetails",
+    },
+  ]);
+
+  if (!applications) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, null, "No applications found for this job."));
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, applications, "Applications fetched successfully.")
+    );
+});
+
 export {
   createJob,
   getJobs,
@@ -289,4 +415,6 @@ export {
   applyForJob,
   updateApplicationStatus,
   deleteJob,
+  myApplications,
+  employerApplications,
 };

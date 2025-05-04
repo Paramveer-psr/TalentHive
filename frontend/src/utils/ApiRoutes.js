@@ -14,7 +14,9 @@ export const applyJobRoute = `${host}/api/applications`;
 
 // Employer routes
 export const employerJobsRoute = `${host}/api/employer/jobs`;
-export const companyProfileRoute = `${host}/api/employer/company-profile`;
+export const companyProfileRoute = `${host}/api/employer/
+company-profile`;
+export const employerApplicationsRoute = `${host}/api/applications`;
 
 // Admin routes
 export const adminUsersRoute = `${host}/api/admin/users`;

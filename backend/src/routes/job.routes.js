@@ -9,6 +9,8 @@ import {
   applyForJob,
   updateApplicationStatus,
   deleteJob,
+  myApplications,
+  employerApplications,
 } from "../controllers/job.controller.js";
 import { roleCheck, verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -30,6 +32,5 @@ router.put(
 );
 
 // Jobseeker routes
-router.post("/:id/apply", verifyJWT, roleCheck(["jobseeker"]), applyForJob);
 
 export default router;

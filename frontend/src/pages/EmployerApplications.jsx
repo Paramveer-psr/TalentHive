@@ -42,10 +42,11 @@ const EmployerApplications = () => {
   const fetchApplications = async (page = 1, filters = {}) => {
     setLoading(true);
     try {
-      const response = await employerService.getJobApplications({
+      const response = await employerService.getApplications({
         page,
         ...filters,
       });
+      // console.log("Applications response:", response.data);
       setApplications(response.data.data);
       setTotalPages(response.data.totalPages || 1);
       setCurrentPage(response.data.currentPage || 1);
@@ -59,7 +60,7 @@ const EmployerApplications = () => {
 
   const fetchEmployerJobs = async () => {
     try {
-      const response = await employerService.getEmployerJobs({
+      const response = await employerService.getJobs({
         limit: 100, // Get all jobs for filtering
       });
       setEmployerJobs(response.data.data);
@@ -196,7 +197,7 @@ const EmployerApplications = () => {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="flex-grow container mx-auto px-4 py-8 mt-16">
+      <main className="flex-grow container mx-auto px-4 py-8 mt-16 pl-20 pr-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -316,12 +317,12 @@ const EmployerApplications = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-xl font-semibold text-gray-900">
-                            {application.user.name}
+                            {application.userDetails.name}
                           </h3>
                           <p className="text-gray-600 mt-1">
                             Applied for:{" "}
                             <span className="font-medium">
-                              {application.job.title}
+                              {application.jobDetails.title}
                             </span>
                           </p>
                         </div>
@@ -345,10 +346,12 @@ const EmployerApplications = () => {
                         <div>
                           <p className="text-sm text-gray-500">Contact</p>
                           <p className="text-gray-700">
-                            {application.user.email}
+                            {application.userDetails.email}
                           </p>
                           {application.phone && (
-                            <p className="text-gray-700">{application.phone}</p>
+                            <p className="text-gray-700">
+                              {application.userDetails.phone}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -471,20 +474,20 @@ const EmployerApplications = () => {
                   <div>
                     <p className="text-sm text-gray-500">Name</p>
                     <p className="text-gray-900 font-medium">
-                      {selectedApplication.user.name}
+                      {selectedApplication.userDetails.name}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
                     <p className="text-gray-900">
-                      {selectedApplication.user.email}
+                      {selectedApplication.userDetails.email}
                     </p>
                   </div>
                   {selectedApplication.phone && (
                     <div>
                       <p className="text-sm text-gray-500">Phone</p>
                       <p className="text-gray-900">
-                        {selectedApplication.phone}
+                        {selectedApplication.userDetails.phone}
                       </p>
                     </div>
                   )}
@@ -512,7 +515,7 @@ const EmployerApplications = () => {
                   <div>
                     <p className="text-sm text-gray-500">Applied For</p>
                     <p className="text-gray-900 font-medium">
-                      {selectedApplication.job.title}
+                      {selectedApplication.jobDetails.title}
                     </p>
                   </div>
                   <div>
@@ -591,8 +594,8 @@ const EmployerApplications = () => {
                 Close
               </Button>
 
-              {(selectedApplication.status === "Pending" ||
-                selectedApplication.status === "Reviewed") && (
+              {(selectedApplication.status === "applied" ||
+                selectedApplication.status === "interviewed") && (
                 <>
                   <Button
                     variant="success"

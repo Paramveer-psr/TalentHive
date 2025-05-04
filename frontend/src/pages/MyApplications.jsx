@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   EyeIcon,
   ArrowPathIcon,
   FunnelIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Navbar from "../components/Navbar";
 import SimpleFooter from "../components/SimpleFooter";
@@ -13,7 +14,7 @@ import Button from "../components/Button";
 import Alert from "../components/Alert";
 import Loader from "../components/Loader";
 import Pagination from "../components/Pagination";
-import { jobService } from "../utils/ApiService";
+import { jobseekerService, jobService } from "../utils/ApiService";
 
 const MyApplications = () => {
   const [applications, setApplications] = useState([]);
@@ -25,14 +26,30 @@ const MyApplications = () => {
     status: "all", // all, pending, reviewed, rejected, accepted
   });
   const [showFilters, setShowFilters] = useState(false);
+  // Add new state for modal
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // Function to handle opening the job details modal
+  const handleViewJob = (application) => {
+    setSelectedJob(application.jobDetails);
+    setShowModal(true);
+  };
+
+  // Function to close modal
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedJob(null);
+  };
 
   const fetchApplications = async (page = 1, filters = {}) => {
     setLoading(true);
     try {
-      const response = await jobService.getMyApplications({
+      const response = await jobseekerService.getUserApplications({
         page,
         ...filters,
       });
+      console.log("Fetched applications:", response.data.data);
       setApplications(response.data.data);
       setTotalPages(response.data.totalPages || 1);
       setCurrentPage(response.data.currentPage || 1);
@@ -91,7 +108,7 @@ const MyApplications = () => {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="flex-grow container mx-auto px-4 py-8 mt-16">
+      <main className="flex-grow container mx-auto px-4 py-8 mt-16 pl-20 pr-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -193,11 +210,11 @@ const MyApplications = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-xl font-semibold text-gray-900">
-                            {application.job.title}
+                            {application.jobDetails.title}
                           </h3>
                           <p className="text-gray-600 mt-1">
-                            {application.job.company} •{" "}
-                            {application.job.location}
+                            {application.jobDetails.companyName} •{" "}
+                            {application.jobDetails.location}
                           </p>
                         </div>
                         <span
@@ -242,8 +259,7 @@ const MyApplications = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          as={Link}
-                          to={`/jobs/${application.job._id}`}
+                          onClick={() => handleViewJob(application)}
                           className="flex items-center"
                         >
                           <EyeIcon className="h-4 w-4 mr-2" />
@@ -281,6 +297,123 @@ const MyApplications = () => {
           )}
         </motion.div>
       </main>
+
+      {/* Job details modal */}
+      <AnimatePresence>
+        {showModal && selectedJob && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-start p-6 border-b">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {selectedJob.title}
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    {selectedJob.companyName} • {selectedJob.location}
+                  </p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                {/* Job details content */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">
+                      Salary
+                    </h3>
+                    <p className="text-gray-900">
+                      {selectedJob.salary || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">
+                      Employment Type
+                    </h3>
+                    <p className="text-gray-900">
+                      {selectedJob.employmentType || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">
+                      Experience Level
+                    </h3>
+                    <p className="text-gray-900">
+                      {selectedJob.experienceLevel || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">
+                      Location
+                    </h3>
+                    <p className="text-gray-900">{selectedJob.location}</p>
+                  </div>
+                </div>
+
+                {selectedJob.description && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Description
+                    </h3>
+                    <p className="text-gray-700 whitespace-pre-line">
+                      {selectedJob.description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedJob.requirements && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Requirements
+                    </h3>
+                    <p className="text-gray-700 whitespace-pre-line">
+                      {selectedJob.requirements}
+                    </p>
+                  </div>
+                )}
+
+                {selectedJob.responsibilities && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Responsibilities
+                    </h3>
+                    <p className="text-gray-700 whitespace-pre-line">
+                      {selectedJob.responsibilities}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 border-t">
+                <Button
+                  variant="outline"
+                  onClick={closeModal}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <SimpleFooter />
     </div>

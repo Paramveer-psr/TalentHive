@@ -10,6 +10,7 @@ import {
   companyProfileRoute,
   resendVerificationEmailRoute,
   isEmailVerifiedRoute,
+  employerApplicationsRoute,
 } from "./ApiRoutes";
 
 // Create axios instance with default config
@@ -122,6 +123,10 @@ export const employerService = {
     return api.delete(`${jobsRoute}/${jobId}`);
   },
 
+  getApplications: async (params) => {
+    return api.get(`${employerApplicationsRoute}/employer-applications`);
+  },
+
   updateApplicationStatus: async (jobId, applicationId, statusData) => {
     return api.put(
       `${jobsRoute}/${jobId}/applications/${applicationId}/status`,
@@ -157,7 +162,7 @@ export const jobseekerService = {
   },
 
   getUserApplications: async () => {
-    return api.get(`${jobsRoute}/applications`);
+    return api.get(`${employerApplicationsRoute}/my-applications`);
   },
 };
 

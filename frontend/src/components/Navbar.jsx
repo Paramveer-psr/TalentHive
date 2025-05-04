@@ -77,7 +77,7 @@ const Navbar = () => {
       return [
         { name: "Dashboard", path: "/employer-dashboard" },
         { name: "Post a Job", path: "/post-job" },
-        { name: "My Jobs", path: "/employer-jobs" },
+        { name: "Applications", path: "/employer/applications" },
         { name: "Company Profile", path: "/employer/company-profile" },
       ];
     }

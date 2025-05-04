@@ -36,7 +36,7 @@ const EmployerJobs = () => {
   const fetchJobs = async (page = 1, filters = {}) => {
     setLoading(true);
     try {
-      const response = await employerService.getEmployerJobs({
+      const response = await employerService.getJobs({
         page,
         ...filters,
       });

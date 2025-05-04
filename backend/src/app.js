@@ -1,4 +1,4 @@
-import express from "express";
+import express, { application } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
@@ -27,9 +27,11 @@ app.get("/", (req, res) => {
 
 import userRouter from "./routes/user.routes.js";
 import jobRouter from "./routes/job.routes.js";
+import applicationRouter from "./routes/application.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 app.use("/api/auth/users", userRouter);
 app.use("/api/jobs", jobRouter);
+app.use("/api/applications", applicationRouter);
 app.use(errorHandler);
 
 export { app };
