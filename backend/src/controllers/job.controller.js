@@ -133,14 +133,24 @@ const getJob = asyncHandler(async (req, res) => {
 
 const getJobsForUser = asyncHandler(async (req, res) => {
   try {
-    console.log("Fetching jobs for user...");
+    // console.log("Fetching jobs for user...");
     const user = await User.findById(req.user._id);
 
     if (!user) {
       throw new ApiError(404, "User not found");
     }
 
-    const jobs = await Job.find({ isActive: true });
+    const appliedJobs = await Application.find({ user: user._id }).select(
+      "job"
+    );
+    // console.log("Applied jobs:", appliedJobs);
+    const appliedJobIds = appliedJobs.map((application) => application.job);
+
+    // Get all active jobs that the user hasn't applied for
+    const jobs = await Job.find({
+      isActive: true,
+      _id: { $nin: appliedJobIds }, // Exclude jobs the user has applied for
+    });
 
     // Map experience strings to numeric values for the AI service
     const experienceMap = {
@@ -189,72 +199,69 @@ const getJobsForUser = asyncHandler(async (req, res) => {
 });
 
 const applyForJob = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { resume, coverLetter } = req.body;
+  try {
+    const { id } = req.params;
+    const { resume, coverLetter } = req.body;
+    // console.log(req.body);
 
-  const job = await Job.findById(id);
+    const job = await Job.findById(id);
 
-  if (!job) {
-    throw new ApiError(404, "Job not found");
+    if (!job) {
+      throw new ApiError(404, "Job not found");
+    }
+
+    if (!job.isActive) {
+      throw new ApiError(400, "This job is no longer active");
+    }
+
+    // Check if user has already applied
+    const hasApplied = await Application.findOne({
+      job: id,
+      user: req.user._id,
+    });
+
+    if (hasApplied) {
+      throw new ApiError(400, "You have already applied for this job");
+    }
+
+    const application = await Application.create({
+      job: id,
+      user: req.user._id,
+      resume,
+      coverLetter,
+    });
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, application, "Application submitted successfully.")
+      );
+  } catch (error) {
+    console.error("Error applying for job:", error);
+    throw new ApiError(500, error.message || "Internal Server Error");
   }
-
-  if (!job.isActive) {
-    throw new ApiError(400, "This job is no longer active");
-  }
-
-  // Check if user has already applied
-  const hasApplied = await Application.findOne({
-    job: id,
-    user: req.user._id,
-  });
-
-  if (hasApplied) {
-    throw new ApiError(400, "You have already applied for this job");
-  }
-
-  const application = await Application.create({
-    job: id,
-    user: req.user._id,
-    resume,
-    coverLetter,
-  });
-
-  res
-    .status(200)
-    .json(
-      new ApiResponse(200, application, "Application submitted successfully.")
-    );
 });
 
 const updateApplicationStatus = asyncHandler(async (req, res) => {
-  const { jobId, applicationId } = req.params;
+  const { applicationId } = req.params;
   const { status } = req.body;
 
-  const job = await Job.findById(jobId);
-
-  if (!job) {
-    throw new ApiError(404, "Job not found");
-  }
-
-  if (job.employer.toString() !== req.user._id.toString()) {
-    throw new ApiError(
-      403,
-      "You can only update applications for your own jobs"
-    );
-  }
-
-  const application = job.applications.id(applicationId);
-  if (!application) {
-    throw new ApiError(404, "Application not found");
-  }
-
-  application.status = status;
-  await job.save();
+  const application = await Application.findByIdAndUpdate(
+    applicationId,
+    {
+      status,
+    },
+    { new: true }
+  );
 
   res
     .status(200)
     .json(
-      new ApiResponse(200, job, "Application status updated successfully.")
+      new ApiResponse(
+        200,
+        application,
+        "Application status updated successfully."
+      )
     );
 });
 
@@ -317,6 +324,9 @@ const myApplications = asyncHandler(async (req, res) => {
           "jobDetails.title": 1,
           "jobDetails.companyName": 1,
           "jobDetails.location": 1,
+          "jobDetails.experience": 1,
+          "jobDetails.salary": 1,
+          "jobDetails.jobType": 1,
           "jobDetails._id": 1,
           "userDetails.name": 1,
           "userDetails.email": 1,

@@ -14,7 +14,7 @@ const applicationSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["applied", "interviewed", "offered", "rejected"],
+      enum: ["applied", "reviewed", "accepted", "rejected"],
       default: "applied",
     },
     coverLetter: {

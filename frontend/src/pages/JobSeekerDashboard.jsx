@@ -10,12 +10,14 @@ import {
   ChevronRightIcon,
   AdjustmentsHorizontalIcon,
   XMarkIcon,
+  DocumentIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "../components/Navbar";
 import SimpleFooter from "../components/SimpleFooter";
-import { jobService } from "../utils/ApiService";
+import { jobseekerService, jobService } from "../utils/ApiService";
 import { data } from "react-router-dom";
+import ResumePreviewModal from "../components/ResumePreviewModal";
 
 // Mock data for jobs
 const MOCK_JOBS = [
@@ -162,6 +164,12 @@ const JobSeekerDashboard = () => {
     location: "",
     salary: "",
   });
+  const [coverLetter, setCoverLetter] = useState("");
+  const [showResumePreview, setShowResumePreview] = useState(false);
+  const [useResume, setUseResume] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [applicationSuccess, setApplicationSuccess] = useState(false);
+  const [applicationError, setApplicationError] = useState("");
 
   // Add this function inside your component or in a separate utils file
   const getTimeAgo = (timestamp) => {
@@ -282,6 +290,85 @@ const JobSeekerDashboard = () => {
       salary: "",
     });
     setSearchTerm("");
+  };
+
+  // Get resume information
+  const resumeUrl = user?.resume || null;
+  const resumeName = user?.resume?.filename || "My Resume.pdf";
+
+  // Handle resume preview
+  const handleViewResume = (e) => {
+    e.stopPropagation();
+    setShowResumePreview(true);
+  };
+
+  // Handle navigation to profile for resume update
+  const handleUpdateResume = () => {
+    // Close the modal
+    setShowResumePreview(false);
+
+    // Navigate to profile page (you'll need to import useNavigate from react-router-dom)
+    // const navigate = useNavigate();
+    // navigate('/profile');
+
+    // For now, just alert
+    alert("To update your resume, please go to the Profile section");
+  };
+
+  // Handle application submission
+  const handleSubmitApplication = async () => {
+    if (!useResume) {
+      alert("Please select to use your resume for this application");
+      return;
+    }
+
+    setSubmitting(true);
+    setApplicationError("");
+
+    try {
+      // Create application data
+      const applicationData = {
+        jobId: selectedJob._id || selectedJob.id,
+        userId: user?._id,
+        coverLetter: coverLetter,
+        resume: resumeUrl, // Flag to use existing resume
+      };
+
+      // Call API to submit application
+      const { data } = await jobseekerService.applyForJob(applicationData);
+      console.log("Submitting application:", data);
+
+      // Show success message
+      setApplicationSuccess(true);
+
+      // Close modal after delay
+      setTimeout(() => {
+        setShowApplyModal(false);
+        resetApplicationForm();
+      }, 2000);
+    } catch (error) {
+      console.error("Error submitting application:", error);
+      setApplicationError(
+        error.response?.data?.message ||
+          "Failed to submit application. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Reset application form
+  const resetApplicationForm = () => {
+    setCoverLetter("");
+    setUseResume(true);
+    setApplicationSuccess(false);
+    setApplicationError("");
+  };
+
+  // When closing application modal
+  const closeApplicationModal = () => {
+    setShowApplyModal(false);
+    resetApplicationForm();
   };
 
   return (
@@ -569,7 +656,7 @@ const JobSeekerDashboard = () => {
                 </p>
               </div>
               <button
-                onClick={() => setShowApplyModal(false)}
+                onClick={closeApplicationModal}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -629,6 +716,20 @@ const JobSeekerDashboard = () => {
                 <h4 className="text-lg font-semibold mb-4">
                   Apply for this position
                 </h4>
+
+                {applicationSuccess && (
+                  <div className="p-3 bg-green-100 text-green-800 rounded-lg mb-4">
+                    Application submitted successfully! The employer will review
+                    your application.
+                  </div>
+                )}
+
+                {applicationError && (
+                  <div className="p-3 bg-red-100 text-red-800 rounded-lg mb-4">
+                    {applicationError}
+                  </div>
+                )}
+
                 <form className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -638,36 +739,85 @@ const JobSeekerDashboard = () => {
                       rows="4"
                       placeholder="Tell us why you're a great fit for this role..."
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
                     ></textarea>
                   </div>
 
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="use-resume"
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="use-resume"
-                      className="ml-2 block text-sm text-gray-700"
-                    >
-                      Use resume on file
-                    </label>
+                  {/* Resume Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex justify-between items-center mb-2">
+                      <h5 className="font-medium text-gray-800">Your Resume</h5>
+                      <button
+                        type="button"
+                        onClick={handleViewResume}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        View Resume
+                      </button>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center">
+                        <DocumentIcon className="h-6 w-6 text-gray-500" />
+                      </div>
+                      <div className="flex-grow">
+                        <p className="text-sm font-medium text-gray-700">
+                          {resumeName}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This resume was uploaded during your profile setup. To
+                          update your resume, please go to your profile
+                          settings.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="use-resume"
+                          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          checked={useResume}
+                          onChange={(e) => setUseResume(e.target.checked)}
+                        />
+                        <label
+                          htmlFor="use-resume"
+                          className="ml-2 block text-sm text-gray-700"
+                        >
+                          Use this resume for my application
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex justify-end space-x-3">
                     <button
                       type="button"
-                      onClick={() => setShowApplyModal(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      onClick={closeApplicationModal}
+                      className="px-4 py-2 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      className="px-4 py-2 bg-primary text-gray-800 rounded-lg hover:bg-primary/90"
+                      onClick={handleSubmitApplication}
+                      disabled={submitting}
+                      className={`px-4 py-2 ${
+                        submitting
+                          ? "bg-gray-300"
+                          : "bg-blue-700 hover:bg-blue-400/90"
+                      } text-white rounded-lg flex items-center justify-center`}
                     >
-                      Submit Application
+                      {submitting ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Application"
+                      )}
                     </button>
                   </div>
                 </form>
@@ -676,6 +826,17 @@ const JobSeekerDashboard = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Resume Preview Modal - using our new component */}
+      <ResumePreviewModal
+        isOpen={showResumePreview}
+        onClose={() => setShowResumePreview(false)}
+        resumeUrl={resumeUrl}
+        resumeName={resumeName}
+        canUpdate={true}
+        onUpdateClick={handleUpdateResume}
+      />
+
       <SimpleFooter />
     </div>
   );

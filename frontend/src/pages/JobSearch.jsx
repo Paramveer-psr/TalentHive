@@ -38,7 +38,7 @@ const JobSearch = () => {
   const fetchJobs = async (page = 1, query = "", filters = {}) => {
     setLoading(true);
     try {
-      const response = await jobService.searchJobs({
+      const response = await jobService.getAllJobs({
         page,
         query,
         ...filters,

@@ -127,10 +127,10 @@ export const employerService = {
     return api.get(`${employerApplicationsRoute}/employer-applications`);
   },
 
-  updateApplicationStatus: async (jobId, applicationId, statusData) => {
+  updateApplicationStatus: async (applicationId, status) => {
     return api.put(
-      `${jobsRoute}/${jobId}/applications/${applicationId}/status`,
-      statusData
+      `${employerApplicationsRoute}/${applicationId}/status`,
+      status
     );
   },
 
@@ -153,12 +153,11 @@ export const jobseekerService = {
     return api.get(`${jobsRoute}/${jobId}`);
   },
 
-  applyForJob: async (jobId, applicationData) => {
-    return api.post(`${jobsRoute}/${jobId}/apply`, applicationData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+  applyForJob: async (applicationData) => {
+    return api.post(
+      `${employerApplicationsRoute}/${applicationData.jobId}/apply`,
+      applicationData
+    );
   },
 
   getUserApplications: async () => {

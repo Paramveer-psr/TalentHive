@@ -3,6 +3,7 @@ import {
   applyForJob,
   employerApplications,
   myApplications,
+  updateApplicationStatus,
 } from "../controllers/job.controller.js";
 import { roleCheck, verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -19,6 +20,12 @@ router.get(
   verifyJWT,
   roleCheck(["jobseeker"]),
   myApplications
+);
+router.put(
+  "/:applicationId/status",
+  verifyJWT,
+  roleCheck(["employer"]),
+  updateApplicationStatus
 );
 router.post("/:id/apply", verifyJWT, roleCheck(["jobseeker"]), applyForJob);
 

@@ -67,7 +67,7 @@ const Navbar = () => {
     if (user.role === "jobseeker") {
       return [
         { name: "Dashboard", path: "/job-seeker-dashboard" },
-        { name: "Find Jobs", path: "/jobs" },
+        // { name: "Find Jobs", path: "/jobs" },
         { name: "My Applications", path: "/my-applications" },
         { name: "Profile", path: "/profile" },
       ];

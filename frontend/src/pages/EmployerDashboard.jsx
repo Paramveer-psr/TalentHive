@@ -234,10 +234,9 @@ const EmployerDashboard = () => {
   // Handle job creation via JobForm
   const handleCreateJob = async (jobData) => {
     try {
-      const response = await employerService.createJob(jobData);
+      // const response = await employerService.createJob(jobData);
       // Add the new job to the list
-      const newJobData = response.data.data;
-      setJobs([newJobData, ...jobs]);
+      setJobs([jobData, ...jobs]);
       setSuccess("Job created successfully!");
       setShowPostJobModal(false);
     } catch (err) {
@@ -254,7 +253,9 @@ const EmployerDashboard = () => {
     try {
       await employerService.deleteJob(selectedJob._id);
       setJobs(jobs.filter((job) => job._id !== selectedJob._id));
-      setFilteredJobs(filteredJobs.filter((job) => job._id !== selectedJob._id));
+      setFilteredJobs(
+        filteredJobs.filter((job) => job._id !== selectedJob._id)
+      );
       setSuccess("Job deleted successfully!");
       setShowDeleteModal(false);
       setSelectedJob(null);
@@ -272,7 +273,10 @@ const EmployerDashboard = () => {
   // Handle update job
   const handleUpdateJob = async (updatedJob) => {
     try {
-      const response = await employerService.updateJob(selectedJob._id, updatedJob);
+      const response = await employerService.updateJob(
+        selectedJob._id,
+        updatedJob
+      );
       setJobs(
         jobs.map((job) =>
           job._id === selectedJob._id ? response.data.data : job
@@ -296,7 +300,7 @@ const EmployerDashboard = () => {
     setSelectedJob(job);
     setShowJobDetails(true);
     setLoadingApplicants(true);
-    
+
     try {
       const response = await employerService.getJob(job._id);
       setSelectedJob(response.data.data);
@@ -359,7 +363,9 @@ const EmployerDashboard = () => {
 
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">Job Description</h3>
-              <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+              <p className="text-gray-700 whitespace-pre-line">
+                {job.description}
+              </p>
             </div>
 
             <div className="mb-6">
@@ -393,8 +399,12 @@ const EmployerDashboard = () => {
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold">{applicant.user?.name}</h4>
-                          <p className="text-gray-600">{applicant.user?.email}</p>
+                          <h4 className="font-semibold">
+                            {applicant.user?.name}
+                          </h4>
+                          <p className="text-gray-600">
+                            {applicant.user?.email}
+                          </p>
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-sm ${
@@ -443,7 +453,9 @@ const EmployerDashboard = () => {
         </div>
         <span
           className={`px-3 py-1 rounded-full text-sm ${
-            job.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            job.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
           }`}
         >
           {job.isActive ? "Active" : "Closed"}
@@ -497,8 +509,8 @@ const EmployerDashboard = () => {
       <div className="bg-white rounded-lg p-6 max-w-md w-full">
         <h3 className="text-lg font-semibold mb-4">Delete Job</h3>
         <p className="text-gray-600 mb-6">
-          Are you sure you want to delete this job posting? This action cannot be
-          undone.
+          Are you sure you want to delete this job posting? This action cannot
+          be undone.
         </p>
         <div className="flex justify-end space-x-4">
           <button
@@ -537,8 +549,8 @@ const EmployerDashboard = () => {
 
         {/* Stats Overview */}
         <div className="max-w-7xl mx-auto px-4 md:px-8 ">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <motion.div
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"> */}
+          {/* <motion.div
               whileHover={{ y: -5 }}
               className="bg-white p-6 rounded-xl shadow-md"
             >
@@ -579,9 +591,9 @@ const EmployerDashboard = () => {
                   <UserGroupIcon className="h-6 w-6 text-green-600" />
                 </div>
               </div>
-            </motion.div>
+            </motion.div> */}
 
-            <motion.div
+          {/* <motion.div
               whileHover={{ y: -5 }}
               className="bg-white p-6 rounded-xl shadow-md"
             >
@@ -596,8 +608,8 @@ const EmployerDashboard = () => {
                   <EyeIcon className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
-            </motion.div>
-          </div>
+            </motion.div> */}
+          {/* </div> */}
 
           {/* Job Listings Section */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
@@ -610,7 +622,7 @@ const EmployerDashboard = () => {
                   setSelectedJob(null);
                   setShowPostJobModal(true);
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-300/90 transition-colors"
               >
                 <PlusIcon className="h-5 w-5" />
                 <span>Post New Job</span>
@@ -700,9 +712,9 @@ const EmployerDashboard = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Posted Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Applications
-                      </th>
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Applications */}
+                      {/* </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
@@ -734,14 +746,11 @@ const EmployerDashboard = () => {
                               new Date(job.createdAt).toLocaleDateString()}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
                             {job.applications?.length || job.applications || 0}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {job.views || 0} views
-                          </div>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

@@ -24,12 +24,6 @@ router.put("/:id", verifyJWT, roleCheck(["employer"]), updateJob);
 router.delete("/:id", verifyJWT, roleCheck(["employer"]), deleteJob);
 router.get("/", verifyJWT, roleCheck(["employer"]), getJobs);
 router.get("/:id", verifyJWT, roleCheck(["employer", "jobseeker"]), getJob);
-router.put(
-  "/:jobId/applications/:applicationId/status",
-  verifyJWT,
-  roleCheck(["employer"]),
-  updateApplicationStatus
-);
 
 // Jobseeker routes
 

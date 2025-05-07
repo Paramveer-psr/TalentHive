@@ -91,7 +91,7 @@ const MyApplications = () => {
   // Helper function to get status badge color
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case "pending":
+      case "applied":
         return "bg-yellow-100 text-yellow-800";
       case "reviewed":
         return "bg-blue-100 text-blue-800";
@@ -182,7 +182,7 @@ const MyApplications = () => {
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="all">All Applications</option>
-                    <option value="pending">Pending</option>
+                    <option value="applied">Applied</option>
                     <option value="reviewed">Reviewed</option>
                     <option value="rejected">Rejected</option>
                     <option value="accepted">Accepted</option>
@@ -340,7 +340,9 @@ const MyApplications = () => {
                       Salary
                     </h3>
                     <p className="text-gray-900">
-                      {selectedJob.salary || "Not specified"}
+                      {selectedJob.salary
+                        ? String(selectedJob.salary)
+                        : "Not specified"}
                     </p>
                   </div>
                   <div>
@@ -348,7 +350,9 @@ const MyApplications = () => {
                       Employment Type
                     </h3>
                     <p className="text-gray-900">
-                      {selectedJob.employmentType || "Not specified"}
+                      {selectedJob.jobType
+                        ? String(selectedJob.jobType)
+                        : "Not specified"}
                     </p>
                   </div>
                   <div>
@@ -356,7 +360,9 @@ const MyApplications = () => {
                       Experience Level
                     </h3>
                     <p className="text-gray-900">
-                      {selectedJob.experienceLevel || "Not specified"}
+                      {selectedJob.experience
+                        ? String(selectedJob.experience)
+                        : "Not specified"}
                     </p>
                   </div>
                   <div>
