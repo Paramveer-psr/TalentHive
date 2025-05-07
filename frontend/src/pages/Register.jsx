@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import axios from "axios";
 import { registerRoute } from "../utils/ApiRoutes";
+import jobs from "../assets/jobs.jpg";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const Register = () => {
       {/* Background image */}
       <div className="absolute inset-0">
         <img
-          src="src/assets/jobs.jpg"
+          src={jobs}
           alt="Job Background"
           className="w-full h-full object-cover"
         />

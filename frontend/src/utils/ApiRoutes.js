@@ -1,4 +1,4 @@
-export const host = `http://localhost:8000`;
+export const host = `https://talenthive-backend.onrender.com`;
 
 // Auth routes
 export const loginRoute = `${host}/api/auth/users/signin`;

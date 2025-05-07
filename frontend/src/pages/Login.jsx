@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import axios from "axios";
 import { loginRoute } from "../utils/ApiRoutes";
+import jobs from "../assets/jobs.jpg";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -38,7 +39,7 @@ const Login = () => {
       {/* Background image */}
       <div className="absolute inset-0">
         <img
-          src="src/assets/jobs.jpg"
+          src={jobs}
           alt="Job Background"
           className="w-full h-full object-cover"
         />
