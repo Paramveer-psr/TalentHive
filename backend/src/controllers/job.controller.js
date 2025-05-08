@@ -380,6 +380,11 @@ const employerApplications = asyncHandler(async (req, res) => {
         as: "jobDetails",
       },
     },
+    {
+      $match: {
+        "jobDetails.employer": new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
 
     {
       $project: {
